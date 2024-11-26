@@ -10,16 +10,7 @@ const requiredEnvVars = [
   'KEYCLOAK_CLIENT_SECRET'
 ];
 
-requiredEnvVars.forEach(varName => {
-  if (!process.env[varName]) {
-    console.error(`Error: ${varName} is not set in environment variables`);
-    console.error('Please check your .env file');
-    process.exit(1);
-  }
-});
-
-
-
+// service-provider/app.js
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
@@ -30,8 +21,8 @@ const crypto = require('crypto');
 const app = express();
 
 // Base URLs
-const EXTERNAL_KEYCLOAK_URL = 'http://localhost:8080';
-const INTERNAL_KEYCLOAK_URL = 'http://keycloak:8080';
+const EXTERNAL_KEYCLOAK_URL = process.env.KEYCLOAK_URL;
+const INTERNAL_KEYCLOAK_URL = process.env.KEYCLOAK_URL;
 const APP_URL = 'http://localhost:3001';
 
 app.use(session({
@@ -44,7 +35,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Gerar code verifier e challenge para PKCE
+// Função para gerar PKCE code verifier e challenge
 function generatePKCE() {
   const verifier = crypto.randomBytes(32).toString('base64url');
   const challenge = crypto
@@ -54,7 +45,8 @@ function generatePKCE() {
   return { verifier, challenge };
 }
 
-const { verifier, challenge } = generatePKCE();
+// Armazenar PKCE em memória (para demonstração)
+let pkceStore = {};
 
 const strategyConfig = {
   issuer: `${INTERNAL_KEYCLOAK_URL}/realms/${process.env.KEYCLOAK_REALM}`,
@@ -65,18 +57,12 @@ const strategyConfig = {
   clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
   callbackURL: `${APP_URL}/callback`,
   scope: ['openid', 'profile', 'email'],
-  responseType: 'code',
-  // Configuração PKCE
-  pkce: true,
-  codeChallengeMethod: 'S256',
-  codeVerifier: verifier,
-  codeChallenge: challenge,
-  state: true,
   passReqToCallback: true
 };
 
-passport.use('oidc', new Strategy(strategyConfig, (req, issuer, profile, done) => {
-  return done(null, profile);
+passport.use('oidc', new Strategy(strategyConfig, 
+  (req, issuer, profile, context, idToken, accessToken, refreshToken, params, done) => {
+    return done(null, profile);
 }));
 
 passport.serializeUser((user, done) => {
@@ -112,11 +98,18 @@ app.get('/', (req, res) => {
 });
 
 app.get('/register', (req, res) => {
+  const { verifier, challenge } = generatePKCE();
+  
+  // Armazenar o verifier para uso posterior
+  const state = crypto.randomBytes(16).toString('hex');
+  pkceStore[state] = { verifier, challenge };
+
   const registrationUrl = new URL(`${EXTERNAL_KEYCLOAK_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/registrations`);
   registrationUrl.searchParams.set('client_id', process.env.KEYCLOAK_CLIENT_ID);
   registrationUrl.searchParams.set('response_type', 'code');
   registrationUrl.searchParams.set('scope', 'openid email profile');
   registrationUrl.searchParams.set('redirect_uri', `${APP_URL}/callback`);
+  registrationUrl.searchParams.set('state', state);
   registrationUrl.searchParams.set('code_challenge', challenge);
   registrationUrl.searchParams.set('code_challenge_method', 'S256');
   
@@ -124,19 +117,39 @@ app.get('/register', (req, res) => {
 });
 
 app.get('/login', (req, res, next) => {
-  const pkceParams = {
+  const { verifier, challenge } = generatePKCE();
+  const state = crypto.randomBytes(16).toString('hex');
+  pkceStore[state] = { verifier, challenge };
+
+  const authenticateConfig = {
+    state,
+    pkce: true,
     code_challenge: challenge,
     code_challenge_method: 'S256'
   };
-  passport.authenticate('oidc', { ...pkceParams })(req, res, next);
+
+  passport.authenticate('oidc', authenticateConfig)(req, res, next);
 });
 
-app.get('/callback',
+app.get('/callback', (req, res, next) => {
+  const state = req.query.state;
+  const pkceData = pkceStore[state];
+
+  if (!pkceData) {
+    return res.status(400).send('Invalid state parameter');
+  }
+
+  const { verifier } = pkceData;
+  
   passport.authenticate('oidc', {
+    code_verifier: verifier,
     successRedirect: '/',
     failureRedirect: '/login'
-  })
-);
+  })(req, res, next);
+
+  // Limpar o store após o uso
+  delete pkceStore[state];
+});
 
 app.get('/logout', (req, res) => {
   const logoutUrl = new URL(`${EXTERNAL_KEYCLOAK_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout`);
@@ -154,6 +167,8 @@ app.get('/logout', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Service Provider running on port ${PORT}`);
-  console.log(`App URL: ${APP_URL}`);
-  console.log(`External Keycloak URL: ${EXTERNAL_KEYCLOAK_URL}`);
+  console.log('Environment variables loaded:');
+  console.log('KEYCLOAK_URL:', process.env.KEYCLOAK_URL);
+  console.log('KEYCLOAK_REALM:', process.env.KEYCLOAK_REALM);
+  console.log('KEYCLOAK_CLIENT_ID:', process.env.KEYCLOAK_CLIENT_ID);
 });
