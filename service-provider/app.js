@@ -1,4 +1,25 @@
 // service-provider/app.js
+
+require('dotenv').config();
+
+// Verificação de variáveis de ambiente
+const requiredEnvVars = [
+  'KEYCLOAK_URL',
+  'KEYCLOAK_REALM',
+  'KEYCLOAK_CLIENT_ID',
+  'KEYCLOAK_CLIENT_SECRET'
+];
+
+requiredEnvVars.forEach(varName => {
+  if (!process.env[varName]) {
+    console.error(`Error: ${varName} is not set in environment variables`);
+    console.error('Please check your .env file');
+    process.exit(1);
+  }
+});
+
+
+
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
