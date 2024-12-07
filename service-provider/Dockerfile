@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Expor porta 3000
-EXPOSE 3000
+EXPOSE 3002
 
 # Comando para iniciar a aplicação
 CMD ["npm", "start"]

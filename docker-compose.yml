@@ -24,7 +24,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.0.4
     container_name: keycloak
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
@@ -36,6 +36,8 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_HTTP_ENABLED: "true"
       KC_PROXY: edge
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
     ports:
       - "8080:8080"
     depends_on:
@@ -50,14 +52,15 @@ services:
       dockerfile: Dockerfile
     container_name: service-provider
     ports:
-      - "3001:3000"
+      - "3002:3002"  
     environment:
       - KEYCLOAK_URL=http://keycloak:8080
       - KEYCLOAK_REALM=myrealm
       - KEYCLOAK_CLIENT_ID=service-provider
-      - KEYCLOAK_CLIENT_SECRET=your-client-secret
+      - KEYCLOAK_CLIENT_SECRET=BZDYM0gqJqI39ssvLakVk4rIWZxetz36  
       - SESSION_SECRET=your-session-secret-key
       - NODE_ENV=development
+      - PORT=3002
     volumes:
       - ./service-provider:/app
       - /app/node_modules
