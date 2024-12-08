@@ -12,7 +12,7 @@ RUN npm install
 # Copiar código fonte
 COPY . .
 
-# Expor porta 3000
+# Expor porta 
 EXPOSE 3002
 
 # Comando para iniciar a aplicação

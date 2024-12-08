@@ -37,7 +37,7 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY: edge
     volumes:
-      - ./keycloak:/opt/keycloak/data/import
+      - ./keycloak/service-provider.json:/opt/keycloak/data/import/realm.json
     ports:
       - "8080:8080"
     depends_on:
@@ -54,16 +54,11 @@ services:
     ports:
       - "3002:3002"  
     environment:
-      - KEYCLOAK_URL=http://keycloak:8080
-      - KEYCLOAK_REALM=myrealm
-      - KEYCLOAK_CLIENT_ID=service-provider
-      - KEYCLOAK_CLIENT_SECRET=BZDYM0gqJqI39ssvLakVk4rIWZxetz36  
-      - SESSION_SECRET=your-session-secret-key
-      - NODE_ENV=development
-      - PORT=3002
-    volumes:
-      - ./service-provider:/app
-      - /app/node_modules
+    - KEYCLOAK_URL=http://keycloak:8080
+    - KEYCLOAK_REALM=myrealm
+    - KEYCLOAK_CLIENT_ID=service-provider
+    - KEYCLOAK_CLIENT_SECRET=sdLJNVUrDnXX9fPh04obYG80WVmDhRMX
+    - SESSION_SECRET=your-session-secret-key
     depends_on:
       - keycloak
     networks:
@@ -74,4 +69,5 @@ volumes:
 
 networks:
   keycloak-network:
+    name: keycloak_custom_network
     driver: bridge

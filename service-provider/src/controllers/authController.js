@@ -1,7 +1,6 @@
-// controllers/authController.js
 const crypto = require('crypto');
-const config = require('../config/enviroment');
-const 
+const config = require('../config/environment');
+const passport = require('passport');
 const { generatePKCE, storePKCE, getPKCE, clearPKCE } = require('../utils/pkce');
 
 class AuthController {
@@ -54,14 +53,24 @@ class AuthController {
     const authenticateConfig = {
       state,
       pkce: true,
-      code_challenge: challenge,
-      code_challenge_method: 'S256'
+      usePKCE: true,
+      params: {
+        code_challenge: challenge,
+        code_challenge_method: 'S256'
+      }
     };
 
     passport.authenticate('oidc', authenticateConfig)(req, res, next);
   }
 
   static callback(req, res, next) {
+    console.log('Callback received:', req.query);
+
+    if (req.query.error) {
+      console.error('Auth error:', req.query.error, req.query.error_description);
+      return res.redirect('/login');
+    }
+
     const state = req.query.state;
     const pkceData = getPKCE(state);
 
@@ -69,10 +78,8 @@ class AuthController {
       return res.status(400).send('Invalid state parameter');
     }
 
-    const { verifier } = pkceData;
-    
     passport.authenticate('oidc', {
-      code_verifier: verifier,
+      code_verifier: pkceData.verifier,
       successRedirect: '/',
       failureRedirect: '/login'
     })(req, res, next);

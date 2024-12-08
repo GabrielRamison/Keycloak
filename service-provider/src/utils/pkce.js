@@ -1,28 +1,40 @@
-// utils/pkce.js
 const crypto = require('crypto');
 
 const pkceStore = {};
 
-const generatePKCE = () => {
-  const verifier = crypto.randomBytes(32).toString('base64url');
-  const challenge = crypto
-    .createHash('sha256')
-    .update(verifier)
-    .digest('base64url');
+function base64URLEncode(buffer) {
+  return buffer
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+function generatePKCE() {
+  const verifier = base64URLEncode(crypto.randomBytes(32));
+  const challenge = base64URLEncode(
+    crypto.createHash('sha256')
+      .update(verifier)
+      .digest()
+  );
   return { verifier, challenge };
-};
+}
 
-const storePKCE = (state, pkceData) => {
-  pkceStore[state] = pkceData;
-};
+function storePKCE(state, data) {
+  pkceStore[state] = data;
+  console.log('Stored PKCE data for state:', state);
+}
 
-const getPKCE = (state) => {
-  return pkceStore[state];
-};
+function getPKCE(state) {
+  const data = pkceStore[state];
+  console.log('Retrieved PKCE data for state:', state, !!data);
+  return data;
+}
 
-const clearPKCE = (state) => {
+function clearPKCE(state) {
   delete pkceStore[state];
-};
+  console.log('Cleared PKCE data for state:', state);
+}
 
 module.exports = {
   generatePKCE,
