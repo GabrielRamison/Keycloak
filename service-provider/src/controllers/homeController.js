@@ -1,5 +1,5 @@
 // src/controllers/homeController.js
-const KeycloakService = require('../service/keycloakService');
+const { KeycloakOAuth2Client } = require('../clients/keycloak-oauth2-client');
 
 class HomeController {
   static async handle(req, res) {
@@ -7,7 +7,9 @@ class HomeController {
     
     if (accessToken) {
       try {
-        const userInfo = await KeycloakService.getUserInfo(accessToken);
+        const oAuth2Client = new KeycloakOAuth2Client();
+        console.log('Requesting user info with token:', accessToken.substring(0, 20) + '...');
+        const userInfo = await oAuth2Client.getUserInfo(accessToken);
         
         res.send(`
           <!DOCTYPE html>

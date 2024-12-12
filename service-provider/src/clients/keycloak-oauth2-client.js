@@ -123,6 +123,20 @@ class KeycloakOAuth2Client {
       throw error;
     }
   }
+  async getLogoutUrl(redirectUri = this.redirectUri) {
+    try {
+      const config = await this.getOpenIdConfig();
+      const endSessionEndpoint = config.end_session_endpoint.replace(
+        this.baseUrl,
+        'http://localhost:8080/auth'
+      );
+      
+      return `${endSessionEndpoint}?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    } catch (error) {
+      console.error("Error getting logout URL:", error.message);
+      throw error;
+    }
+  }
 }
 
 module.exports = { KeycloakOAuth2Client };
