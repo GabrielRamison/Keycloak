@@ -1,39 +1,33 @@
 // src/controllers/loginCallbackController.js
-const { KeycloakOAuth2Client } = require('../clients/keycliak-oauth2-client');
-const config = require('../config/environment');
+const { KeycloakOAuth2Client } = require('../clients/keycloak-oauth2-client');
 
 const LoginCallbackController = {
   handle: async (req, res) => {
-    const oAuth2Client = new KeycloakOAuth2Client({
-      baseUrl: config.KEYCLOAK.BASE_URL,
-      realm: config.KEYCLOAK.REALM,
-      clientId: config.KEYCLOAK.CLIENT_ID,
-      clientSecret: config.KEYCLOAK.CLIENT_SECRET,
-      redirectUri: config.KEYCLOAK.REDIRECT_URI
-    });
-
     try {
-      const code = req.query.code;
-      if (!code) {
-        return res.status(400).json({
-          status: 400,
-          message: 'Authorization code not provided'
-        });
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        throw new Error('Missing required parameters');
       }
-      
-      const accessToken = await oAuth2Client.getAccessToken(code);
-      res.cookie('accessToken', accessToken, {
+
+      console.log('Callback received:', { code, state });
+
+      const oAuth2Client = new KeycloakOAuth2Client();
+      const tokenResponse = await oAuth2Client.getAccessToken(code, state);
+
+      console.log('Token received successfully');
+
+      res.cookie('accessToken', tokenResponse.access_token, {
         httpOnly: true,
-        secure: false
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 3600000 // 1 hora
       });
-      
-      res.redirect('/user');
+
+      res.redirect('/');
     } catch (err) {
-      console.error('Callback error:', err);
-      res.status(500).json({
-        status: 500,
-        message: 'An unexpected error occurred'
-      });
+      console.error('Callback error:', err.message);
+      res.redirect('/login');
     }
   }
 };

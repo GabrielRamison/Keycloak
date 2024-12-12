@@ -1,5 +1,5 @@
 # docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -36,6 +36,9 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_HTTP_ENABLED: "true"
       KC_PROXY: edge
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PATH: /auth
+      KC_HTTP_RELATIVE_PATH: /auth
     volumes:
       - ./keycloak/service-provider.json:/opt/keycloak/data/import/realm.json
     ports:
@@ -47,18 +50,18 @@ services:
       - keycloak-network
 
   service-provider:
-    build: 
+    build:
       context: ./service-provider
       dockerfile: Dockerfile
     container_name: service-provider
     ports:
-      - "3002:3002"  
+      - "3002:3002"
     environment:
-    - KEYCLOAK_URL=http://keycloak:8080
-    - KEYCLOAK_REALM=myrealm
-    - KEYCLOAK_CLIENT_ID=service-provider
-    - KEYCLOAK_CLIENT_SECRET=sdLJNVUrDnXX9fPh04obYG80WVmDhRMX
-    - SESSION_SECRET=your-session-secret-key
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=myrealm
+      - KEYCLOAK_CLIENT_ID=service-provider
+      - KEYCLOAK_CLIENT_SECRET=sdLJNVUrDnXX9fPh04obYG80WVmDhRMX
+      - SESSION_SECRET=your-session-secret-key
     depends_on:
       - keycloak
     networks:

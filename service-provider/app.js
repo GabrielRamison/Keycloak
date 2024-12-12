@@ -4,6 +4,7 @@ const session = require('express-session');
 const config = require('./src/config/environment');
 const passport = require('./src/config/passport');
 const authRoutes = require('./src/routes/authRoutes');
+const tokenDebug = require('./src/middleware/tokenDebug');
 
 const app = express();
 
@@ -17,9 +18,9 @@ app.use(session({
 
 app.use('/', authRoutes);
 
-app.listen(config.PORT, () => {
-  console.log(`Server running on port ${config.PORT}`);
-});
+// app.listen(config.PORT, () => {
+//   console.log(`Server running on port ${config.PORT}`);
+// });
 
 // 1. Primeiro a sessão
 app.use(session({

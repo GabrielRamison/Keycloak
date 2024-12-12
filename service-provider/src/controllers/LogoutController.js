@@ -1,5 +1,5 @@
 // src/controllers/logoutController.js
-const { KeycloakOAuth2Client } = require('../clients/keycliak-oauth2-client');
+const { KeycloakOAuth2Client } = require('../clients/keycloak-oauth2-client');
 const config = require('../config/environment');
 
 const LogoutController = {
