@@ -9,101 +9,105 @@ Este projeto implementa um serviço de autenticação utilizando Keycloak como p
 - Gerenciamento de sessão seguro
 - Fluxos de registro e login de usuários
 - Interface web básica para demonstração
-- Containerização com Docker
+- Containerização com Docker e Docker Compose
 
 ## Pré-requisitos
 
-- Node.js 18 ou superior
-- Docker e Docker Compose (para ambiente containerizado)
-- Instância do Keycloak configurada e em execução
-- Variáveis de ambiente configuradas
+- Docker e Docker Compose
+- Keycloak 26.0.4 ou superior
 
-## Configuração
+## Início Rápido
 
-### Variáveis de Ambiente
-
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
-
-```env
-KEYCLOAK_URL=http://keycloak:8080
-KEYCLOAK_REALM=seu-realm
-KEYCLOAK_CLIENT_ID=seu-client-id
-KEYCLOAK_CLIENT_SECRET=seu-client-secret
-PORT=3002
-SESSION_SECRET=sua-session-secret
-```
-
-### Configuração do Keycloak
-
-1. Crie um novo realm no Keycloak
-2. Configure um novo client com:
-   - Client Protocol: openid-connect
-   - Access Type: confidential
-   - Valid Redirect URIs: http://localhost:3002/callback
-   - Web Origins: http://localhost:3002
-
-## Instalação
-
+1. Clone o repositório
+2. Configure as variáveis de ambiente no `docker-compose.yml`
+3. Execute:
 ```bash
-# Instalar dependências
-npm install
+docker-compose up --build
+O serviço estará disponível em:
 
-# Iniciar em modo desenvolvimento
-npm start
+Aplicação: http://localhost:3002
+Keycloak: http://localhost:8080
 
-# Ou usar Docker
-docker build -t keycloak-service-provider .
-docker run -p 3002:3002 keycloak-service-provider
-```
+Estrutura do Projeto
+Copy├── service-provider/
+│   ├── src/
+│   │   ├── clients/
+│   │   │   └── keycloak-oauth2-client.js    # Cliente Keycloak OAuth2
+│   │   ├── config/
+│   │   │   └── environment.js               # Configurações de ambiente
+│   │   ├── controllers/
+│   │   │   ├── homeController.js            # Controlador da página inicial
+│   │   │   ├── loginController.js           # Controlador de login
+│   │   │   ├── logoutController.js          # Controlador de logout
+│   │   │   └── userInfoController.js        # Controlador de informações do usuário
+│   │   └── routes/
+│   │       └── authRoutes.js                # Rotas de autenticação
+│   ├── Dockerfile
+│   └── app.js
+├── keycloak/
+│   └── service-provider.json                # Configuração do realm
+└── docker-compose.yml
+Configuração do Keycloak
 
-## Estrutura do Projeto
+Acesse o console admin do Keycloak (http://localhost:8080)
+Login com admin/admin
+Verifique se o realm "myrealm" foi importado corretamente
+Configure o client "service-provider":
 
-```
-├── src/
-│   ├── clients/
-│   │   ├── oauth2-client.js          # Interface base OAuth2
-│   │   └── keycloak-oauth2-client.js # Implementação Keycloak
-│   ├── config/
-│   │   ├── environment.js            # Configurações de ambiente
-│   │   └── passport.js               # Configuração do Passport.js
-│   ├── controllers/
-│   │   └── authController.js         # Controlador de autenticação
-│   ├── routes/
-│   │   └── authRoutes.js            # Rotas de autenticação
-│   └── utils/
-│       └── pkce.js                   # Utilitários PKCE
-├── Dockerfile
-└── server.js
-```
+Access Type: confidential
+Service Accounts Enabled: ON
+Valid Redirect URIs: http://localhost:3002/*
+Web Origins: http://localhost:3002
 
-## Endpoints
 
-- `GET /`: Página inicial
-- `GET /login`: Inicia o fluxo de login
-- `GET /register`: Inicia o fluxo de registro
-- `GET /callback`: Callback do OAuth2
-- `GET /logout`: Realiza o logout
 
-## Segurança
+Endpoints
 
-O projeto implementa várias medidas de segurança:
+GET /: Página inicial
+GET /login: Inicia o fluxo de login
+GET /register: Inicia o fluxo de registro
+GET /callback: Callback do OAuth2
+GET /logout: Realiza o logout
+GET /userinfo: Exibe informações do usuário
 
-- PKCE para prevenir ataques de interceptação de código
-- Gerenciamento seguro de sessão com express-session
-- Cookies seguros com flags httpOnly e sameSite
-- Validação de state para prevenir CSRF
-- Configuração de CORS apropriada
+Desenvolvimento
+Rodando com Docker Compose
+bashCopy# Iniciar os serviços
+docker-compose up --build
 
-## Desenvolvimento
+# Parar os serviços
+docker-compose down
 
-Para contribuir com o projeto:
+# Limpar volumes e reconstruir
+docker-compose down -v
+docker-compose up --build
+Logs e Debugging
+Para ver os logs:
+bashCopy# Todos os serviços
+docker-compose logs
 
-1. Fork o repositório
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+# Serviço específico
+docker-compose logs service-provider
+docker-compose logs keycloak
+Segurança
 
-## Licença
+PKCE implementado para segurança adicional
+Tokens armazenados em cookies HTTP-only
+Comunicação segura entre containers
+Validação de state para prevenção CSRF
+URLs internas e externas separadas para comunicação segura
 
-Este projeto está sob a licença [MIT](LICENSE).
+Variáveis de Ambiente
+As principais variáveis configuradas no docker-compose.yml:
+yamlCopyKEYCLOAK_URL=http://keycloak:8080
+KEYCLOAK_REALM=myrealm
+KEYCLOAK_CLIENT_ID=service-provider
+KEYCLOAK_CLIENT_SECRET=seu-client-secret
+SESSION_SECRET=your-session-secret-key
+Contribuindo
+
+Fork o repositório
+Crie uma branch para sua feature
+Commit suas mudanças
+Push para a branch
+Abra um Pull Request
